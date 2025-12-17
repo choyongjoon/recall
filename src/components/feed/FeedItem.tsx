@@ -1,9 +1,9 @@
-import React, { memo } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { FeedPhoto } from '../../types/photo';
-import { PhotoThumbnail } from './PhotoThumbnail';
-import { MetadataSection } from './MetadataSection';
-import { SIZES } from '../../utils/constants';
+import { memo } from "react";
+import { StyleSheet, View } from "react-native";
+import type { FeedPhoto } from "../../types/photo";
+import { SIZES } from "../../utils/constants";
+import { MetadataSection } from "./MetadataSection";
+import { PhotoThumbnail } from "./PhotoThumbnail";
 
 interface FeedItemProps {
   photo: FeedPhoto;
@@ -13,7 +13,7 @@ function FeedItemComponent({ photo }: FeedItemProps) {
   return (
     <View style={styles.container}>
       <PhotoThumbnail uri={photo.uri} />
-      <MetadataSection title={photo.title} timeAgo={photo.timeAgo} />
+      <MetadataSection timeAgo={photo.timeAgo} title={photo.title} />
     </View>
   );
 }

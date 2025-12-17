@@ -6,18 +6,18 @@ const YEAR_MS = 365 * DAY_MS;
 
 export function formatTimeAgo(timestamp: number | null): string {
   if (timestamp === null) {
-    return '알 수 없음';
+    return "알 수 없음";
   }
 
   const now = Date.now();
   const diff = now - timestamp;
 
   if (diff < 0) {
-    return '방금 전';
+    return "방금 전";
   }
 
   if (diff < MINUTE_MS) {
-    return '방금 전';
+    return "방금 전";
   }
 
   if (diff < HOUR_MS) {

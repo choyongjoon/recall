@@ -1,10 +1,10 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { FeedPhoto, PhotoAsset } from '../types/photo';
-import { PhotoSessionManager } from '../services/shuffleService';
-import { fetchAllPhotoIds, fetchPhotosByIds } from '../services/photoService';
-import { generatePhotoTitle } from '../utils/titleGenerator';
-import { formatTimeAgo } from '../utils/formatters';
-import { FEED } from '../utils/constants';
+import { useCallback, useRef, useState } from "react";
+import { fetchAllPhotoIds, fetchPhotosByIds } from "../services/photoService";
+import { PhotoSessionManager } from "../services/shuffleService";
+import type { FeedPhoto, PhotoAsset } from "../types/photo";
+import { FEED } from "../utils/constants";
+import { formatTimeAgo } from "../utils/formatters";
+import { generatePhotoTitle } from "../utils/titleGenerator";
 
 function mapToFeedPhoto(photo: PhotoAsset): FeedPhoto {
   return {
@@ -47,7 +47,7 @@ export function useInfinitePhotos() {
       const batch = await loadBatch(FEED.batchSize);
       preloadedPhotos.current = batch;
     } catch (error) {
-      console.warn('Failed to preload batch:', error);
+      console.warn("Failed to preload batch:", error);
     } finally {
       isPreloading.current = false;
     }
@@ -83,7 +83,7 @@ export function useInfinitePhotos() {
 
       isInitialized.current = true;
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load photos'));
+      setError(err instanceof Error ? err : new Error("Failed to load photos"));
     } finally {
       setIsLoading(false);
     }
@@ -116,7 +116,7 @@ export function useInfinitePhotos() {
       // Start preloading next batch
       preloadNextBatch();
     } catch (err) {
-      console.error('Failed to load more photos:', err);
+      console.error("Failed to load more photos:", err);
     } finally {
       setIsLoadingMore(false);
     }
@@ -136,7 +136,7 @@ export function useInfinitePhotos() {
       // Start preloading next batch
       preloadNextBatch();
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to refresh'));
+      setError(err instanceof Error ? err : new Error("Failed to refresh"));
     } finally {
       setIsRefreshing(false);
     }
@@ -154,7 +154,10 @@ export function useInfinitePhotos() {
       const threshold = totalLoaded * FEED.preloadThreshold;
 
       // If user has scrolled past 50% of loaded photos, start preloading
-      if (lastVisibleIndex >= threshold && preloadedPhotos.current.length === 0) {
+      if (
+        lastVisibleIndex >= threshold &&
+        preloadedPhotos.current.length === 0
+      ) {
         preloadNextBatch();
       }
     },

@@ -1,6 +1,6 @@
-import React, { memo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, SIZES } from '../../utils/constants';
+import { memo } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { COLORS, SIZES } from "../../utils/constants";
 
 interface MetadataSectionProps {
   title: string;
@@ -12,7 +12,7 @@ function MetadataSectionComponent({ title, timeAgo }: MetadataSectionProps) {
     <View style={styles.container}>
       <View style={styles.avatar} />
       <View style={styles.textContainer}>
-        <Text style={styles.title} numberOfLines={SIZES.titleMaxLines}>
+        <Text numberOfLines={SIZES.titleMaxLines} style={styles.title}>
           {title}
         </Text>
         <Text style={styles.timeAgo}>{timeAgo}</Text>
@@ -23,8 +23,8 @@ function MetadataSectionComponent({ title, timeAgo }: MetadataSectionProps) {
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     paddingTop: SIZES.thumbnailMetadataGap,
   },
   avatar: {
@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: SIZES.titleFontSize,
-    fontWeight: '500',
+    fontWeight: "500",
     color: COLORS.textPrimary,
     lineHeight: 20,
   },

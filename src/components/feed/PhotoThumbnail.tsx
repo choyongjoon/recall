@@ -1,7 +1,7 @@
-import React, { memo } from 'react';
-import { View, StyleSheet, useWindowDimensions } from 'react-native';
-import { Image } from 'expo-image';
-import { COLORS, SIZES } from '../../utils/constants';
+import { Image } from "expo-image";
+import { memo } from "react";
+import { StyleSheet, useWindowDimensions, View } from "react-native";
+import { COLORS, SIZES } from "../../utils/constants";
 
 interface PhotoThumbnailProps {
   uri: string;
@@ -23,11 +23,11 @@ function PhotoThumbnailComponent({ uri }: PhotoThumbnailProps) {
       ]}
     >
       <Image
+        cachePolicy="memory-disk"
+        contentFit="contain"
         source={{ uri }}
         style={styles.image}
-        contentFit="contain"
         transition={200}
-        cachePolicy="memory-disk"
       />
     </View>
   );
@@ -37,11 +37,11 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.letterbox,
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   image: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
 });
 

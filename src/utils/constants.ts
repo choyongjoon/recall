@@ -1,10 +1,10 @@
 export const COLORS = {
-  background: '#FFFFFF',
-  letterbox: '#000000',
-  avatarBackground: '#E0E0E0',
-  textPrimary: '#030303',
-  textSecondary: '#606060',
-  separator: '#E5E5E5',
+  background: "#FFFFFF",
+  letterbox: "#000000",
+  avatarBackground: "#E0E0E0",
+  textPrimary: "#030303",
+  textSecondary: "#606060",
+  separator: "#E5E5E5",
 } as const;
 
 export const SIZES = {

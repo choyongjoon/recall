@@ -1,4 +1,4 @@
-import * as MediaLibrary from "expo-media-library";
+import type * as MediaLibrary from "expo-media-library";
 
 export interface PhotoAsset {
   id: string;

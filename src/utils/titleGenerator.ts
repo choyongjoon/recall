@@ -1,5 +1,5 @@
-import { PhotoAsset } from '../types/photo';
-import { formatDateForTitle } from './formatters';
+import type { PhotoAsset } from "../types/photo";
+import { formatDateForTitle } from "./formatters";
 
 export function generatePhotoTitle(photo: PhotoAsset): string {
   const { creationTime, location, filename } = photo;
@@ -19,12 +19,12 @@ export function generatePhotoTitle(photo: PhotoAsset): string {
 
   // Priority 3: Filename (remove extension)
   if (filename) {
-    const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
+    const nameWithoutExt = filename.replace(/\.[^/.]+$/, "");
     if (nameWithoutExt && nameWithoutExt.length > 0) {
       return nameWithoutExt;
     }
   }
 
   // Priority 4: Fallback
-  return '무제';
+  return "무제";
 }

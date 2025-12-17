@@ -3,5 +3,13 @@
   "extends": [
     "ultracite/core",
     "ultracite/react"
-  ]
+  ],
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "style": {
+        "useFilenamingConvention": "off"
+      },
+    }
+  }
 }

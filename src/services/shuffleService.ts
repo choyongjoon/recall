@@ -17,7 +17,7 @@ export function shuffle<T>(array: T[]): T[] {
 export class PhotoSessionManager {
   private shownPhotoIds: Set<string> = new Set();
   private shuffledIds: string[] = [];
-  private currentIndex: number = 0;
+  private currentIndex = 0;
 
   /**
    * Initialize with all available photo IDs
@@ -43,7 +43,10 @@ export class PhotoSessionManager {
   getNextBatch(count: number): string[] {
     const batch: string[] = [];
 
-    while (batch.length < count && this.currentIndex < this.shuffledIds.length) {
+    while (
+      batch.length < count &&
+      this.currentIndex < this.shuffledIds.length
+    ) {
       const id = this.shuffledIds[this.currentIndex];
       if (!this.shownPhotoIds.has(id)) {
         batch.push(id);

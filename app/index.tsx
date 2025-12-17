@@ -1,19 +1,19 @@
-import React, { useEffect, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  RefreshControl,
-  ActivityIndicator,
-} from "react-native";
 import { FlashList } from "@shopify/flash-list";
+import { useCallback, useEffect } from "react";
+import {
+  ActivityIndicator,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { usePermissions } from "../src/hooks/usePermissions";
-import { useInfinitePhotos } from "../src/hooks/useInfinitePhotos";
 import { FeedItem } from "../src/components/feed/FeedItem";
 import { PermissionGuide } from "../src/components/permission/PermissionGuide";
-import { FeedPhoto } from "../src/types/photo";
-import { COLORS, FEED } from "../src/utils/constants";
+import { useInfinitePhotos } from "../src/hooks/useInfinitePhotos";
+import { usePermissions } from "../src/hooks/usePermissions";
+import type { FeedPhoto } from "../src/types/photo";
+import { COLORS } from "../src/utils/constants";
 
 export default function FeedScreen() {
   const {
@@ -44,7 +44,7 @@ export default function FeedScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: FeedPhoto }) => <FeedItem photo={item} />,
-    [],
+    []
   );
 
   const keyExtractor = useCallback((item: FeedPhoto) => item.id, []);
@@ -53,7 +53,7 @@ export default function FeedScreen() {
     if (!isLoadingMore) return null;
     return (
       <View style={styles.footer}>
-        <ActivityIndicator size="small" color={COLORS.textSecondary} />
+        <ActivityIndicator color={COLORS.textSecondary} size="small" />
       </View>
     );
   }, [isLoadingMore]);
@@ -75,7 +75,7 @@ export default function FeedScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.textSecondary} />
+          <ActivityIndicator color={COLORS.textSecondary} size="large" />
         </View>
       </SafeAreaView>
     );
@@ -98,7 +98,7 @@ export default function FeedScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.textSecondary} />
+          <ActivityIndicator color={COLORS.textSecondary} size="large" />
           <Text style={styles.loadingText}>사진을 불러오는 중...</Text>
         </View>
       </SafeAreaView>
@@ -118,24 +118,24 @@ export default function FeedScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView edges={["top"]} style={styles.container}>
       <FlashList
+        contentContainerStyle={styles.listContent}
         data={photos}
-        renderItem={renderItem}
         keyExtractor={keyExtractor}
+        ListEmptyComponent={renderEmpty}
+        ListFooterComponent={renderFooter}
         onEndReached={hasMore ? loadMore : undefined}
         onEndReachedThreshold={0.5}
         onViewableItemsChanged={onViewableItemsChanged}
         refreshControl={
           <RefreshControl
-            refreshing={isRefreshing}
             onRefresh={refresh}
+            refreshing={isRefreshing}
             tintColor={COLORS.textSecondary}
           />
         }
-        ListFooterComponent={renderFooter}
-        ListEmptyComponent={renderEmpty}
-        contentContainerStyle={styles.listContent}
+        renderItem={renderItem}
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>

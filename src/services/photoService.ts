@@ -1,5 +1,5 @@
-import * as MediaLibrary from 'expo-media-library';
-import { PhotoAsset, mapAssetToPhoto } from '../types/photo';
+import * as MediaLibrary from "expo-media-library";
+import { mapAssetToPhoto, type PhotoAsset } from "../types/photo";
 
 const PAGE_SIZE = 500; // Fetch IDs in large batches for efficiency
 
