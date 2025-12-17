@@ -1,19 +1,23 @@
 {
   "expo": {
-    "name": "recall",
+    "name": "Recall",
     "slug": "recall",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "scheme": "recall",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Recall needs access to your photo library to display your photos in the feed."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,10 +25,25 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES"
+      ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Recall needs access to your photo library to display your photos in the feed.",
+          "savePhotosPermission": false,
+          "isAccessMediaLocationEnabled": true
+        }
+      ]
+    ]
   }
 }
