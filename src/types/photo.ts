@@ -1,4 +1,4 @@
-import * as MediaLibrary from 'expo-media-library';
+import * as MediaLibrary from "expo-media-library";
 
 export interface PhotoAsset {
   id: string;
@@ -23,9 +23,13 @@ export interface FeedPhoto extends PhotoAsset {
   timeAgo: string;
 }
 
-export type PermissionStatus = 'undetermined' | 'granted' | 'denied' | 'limited';
+export type PermissionStatus =
+  | "undetermined"
+  | "granted"
+  | "denied"
+  | "limited";
 
-export function mapAssetToPhoto(asset: MediaLibrary.Asset): PhotoAsset {
+export function mapAssetToPhoto(asset: MediaLibrary.AssetInfo): PhotoAsset {
   return {
     id: asset.id,
     uri: asset.uri,

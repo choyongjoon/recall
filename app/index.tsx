@@ -1,23 +1,27 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
-} from 'react-native';
-import { FlashList } from '@shopify/flash-list';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { usePermissions } from '../src/hooks/usePermissions';
-import { useInfinitePhotos } from '../src/hooks/useInfinitePhotos';
-import { FeedItem } from '../src/components/feed/FeedItem';
-import { PermissionGuide } from '../src/components/permission/PermissionGuide';
-import { FeedPhoto } from '../src/types/photo';
-import { COLORS, FEED } from '../src/utils/constants';
+} from "react-native";
+import { FlashList } from "@shopify/flash-list";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { usePermissions } from "../src/hooks/usePermissions";
+import { useInfinitePhotos } from "../src/hooks/useInfinitePhotos";
+import { FeedItem } from "../src/components/feed/FeedItem";
+import { PermissionGuide } from "../src/components/permission/PermissionGuide";
+import { FeedPhoto } from "../src/types/photo";
+import { COLORS, FEED } from "../src/utils/constants";
 
 export default function FeedScreen() {
-  const { status, isLoading: isPermissionLoading, requestPermission, isGranted } =
-    usePermissions();
+  const {
+    status,
+    isLoading: isPermissionLoading,
+    requestPermission,
+    isGranted,
+  } = usePermissions();
 
   const {
     photos,
@@ -40,7 +44,7 @@ export default function FeedScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: FeedPhoto }) => <FeedItem photo={item} />,
-    []
+    [],
   );
 
   const keyExtractor = useCallback((item: FeedPhoto) => item.id, []);
@@ -83,7 +87,7 @@ export default function FeedScreen() {
       <SafeAreaView style={styles.container}>
         <PermissionGuide
           onRequestPermission={requestPermission}
-          showSettingsButton={status === 'denied'}
+          showSettingsButton={status === "denied"}
         />
       </SafeAreaView>
     );
@@ -114,12 +118,11 @@ export default function FeedScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <FlashList
         data={photos}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
-        estimatedItemSize={280}
         onEndReached={hasMore ? loadMore : undefined}
         onEndReachedThreshold={0.5}
         onViewableItemsChanged={onViewableItemsChanged}
@@ -146,8 +149,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 12,
@@ -156,37 +159,37 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 32,
   },
   errorText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.textPrimary,
     marginBottom: 8,
   },
   errorSubtext: {
     fontSize: 14,
     color: COLORS.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   listContent: {
     paddingTop: 8,
   },
   footer: {
     paddingVertical: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingTop: 100,
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.textPrimary,
     marginBottom: 8,
   },
