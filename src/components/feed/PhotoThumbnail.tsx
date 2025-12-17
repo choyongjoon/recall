@@ -27,7 +27,9 @@ function PhotoThumbnailComponent({ uri }: PhotoThumbnailProps) {
       <Image
         cachePolicy="memory-disk"
         contentFit="contain"
-        onLoad={() => setIsLoaded(true)}
+        onLoadEnd={() => setIsLoaded(true)}
+        onLoadStart={() => setIsLoaded(false)}
+        recyclingKey={uri}
         source={{ uri }}
         style={styles.image}
         transition={200}
