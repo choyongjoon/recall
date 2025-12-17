@@ -1,6 +1,7 @@
 export const COLORS = {
   background: "#FFFFFF",
   letterbox: "#000000",
+  skeleton: "#E0E0E0",
   avatarBackground: "#E0E0E0",
   textPrimary: "#030303",
   textSecondary: "#606060",
@@ -19,7 +20,8 @@ export const SIZES = {
 } as const;
 
 export const FEED = {
-  batchSize: 10,
+  pageSize: 20,
+  displayBatchSize: 10,
   preloadThreshold: 0.5,
   initialNumToRender: 5,
   maxToRenderPerBatch: 5,

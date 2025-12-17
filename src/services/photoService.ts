@@ -1,15 +1,22 @@
 import * as MediaLibrary from "expo-media-library";
 import { mapAssetToPhoto, type PhotoAsset } from "../types/photo";
 
-const PAGE_SIZE = 500; // Fetch IDs in large batches for efficiency
+const PAGE_SIZE = 500;
 
 /**
- * Fetches all photo asset IDs from the media library
+ * Fetches all photo assets from the media library
+ * Uses getAssetsAsync which returns basic asset info including URI (fast)
  */
-export async function fetchAllPhotoIds(): Promise<string[]> {
-  const ids: string[] = [];
+export async function fetchAllPhotos(
+  onProgress?: (loaded: number, total: number | null) => void
+): Promise<PhotoAsset[]> {
+  const startTime = Date.now();
+  console.log("[PERF] fetchAllPhotos: started");
+
+  const photos: PhotoAsset[] = [];
   let hasNextPage = true;
   let endCursor: string | undefined;
+  let pageCount = 0;
 
   while (hasNextPage) {
     const result = await MediaLibrary.getAssetsAsync({
@@ -18,52 +25,42 @@ export async function fetchAllPhotoIds(): Promise<string[]> {
       after: endCursor,
       sortBy: [[MediaLibrary.SortBy.creationTime, false]],
     });
+    pageCount += 1;
 
     for (const asset of result.assets) {
-      ids.push(asset.id);
+      photos.push(mapAssetToPhoto(asset));
+    }
+
+    // Report progress
+    if (onProgress) {
+      onProgress(photos.length, result.hasNextPage ? null : photos.length);
     }
 
     hasNextPage = result.hasNextPage;
     endCursor = result.endCursor;
-  }
 
-  return ids;
-}
-
-/**
- * Fetches photo assets by their IDs
- */
-export async function fetchPhotosByIds(ids: string[]): Promise<PhotoAsset[]> {
-  if (ids.length === 0) {
-    return [];
-  }
-
-  const photos: PhotoAsset[] = [];
-
-  for (const id of ids) {
-    try {
-      const asset = await MediaLibrary.getAssetInfoAsync(id);
-      if (asset) {
-        photos.push(mapAssetToPhoto(asset));
-      }
-    } catch (error) {
-      console.warn(`Failed to fetch asset ${id}:`, error);
+    // Log every 10 pages
+    if (pageCount % 10 === 0) {
+      console.log(`[PERF] fetchAllPhotos: loaded ${photos.length} photos...`);
     }
   }
 
+  console.log(
+    `[PERF] fetchAllPhotos: completed ${photos.length} photos in ${Date.now() - startTime}ms`
+  );
   return photos;
 }
 
 /**
  * Request media library permissions
  */
-export async function requestPermissions(): Promise<MediaLibrary.PermissionResponse> {
+export function requestPermissions(): Promise<MediaLibrary.PermissionResponse> {
   return MediaLibrary.requestPermissionsAsync();
 }
 
 /**
  * Get current media library permission status
  */
-export async function getPermissions(): Promise<MediaLibrary.PermissionResponse> {
+export function getPermissions(): Promise<MediaLibrary.PermissionResponse> {
   return MediaLibrary.getPermissionsAsync();
 }

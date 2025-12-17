@@ -2,10 +2,10 @@ import { memo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { COLORS, SIZES } from "../../utils/constants";
 
-interface MetadataSectionProps {
+type MetadataSectionProps = {
   title: string;
   timeAgo: string;
-}
+};
 
 function MetadataSectionComponent({ title, timeAgo }: MetadataSectionProps) {
   return (

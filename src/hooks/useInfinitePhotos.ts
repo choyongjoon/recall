@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { fetchAllPhotoIds, fetchPhotosByIds } from "../services/photoService";
+import { fetchAllPhotos } from "../services/photoService";
 import { PhotoSessionManager } from "../services/shuffleService";
 import type { FeedPhoto, PhotoAsset } from "../types/photo";
 import { FEED } from "../utils/constants";
@@ -24,47 +24,31 @@ export function useInfinitePhotos() {
 
   const sessionManager = useRef(new PhotoSessionManager());
   const isInitialized = useRef(false);
-  const preloadedPhotos = useRef<FeedPhoto[]>([]);
-  const isPreloading = useRef(false);
 
-  const loadBatch = useCallback(async (count: number): Promise<FeedPhoto[]> => {
-    const ids = sessionManager.current.getNextBatch(count);
-    if (ids.length === 0) {
-      return [];
-    }
-
-    const assets = await fetchPhotosByIds(ids);
+  const loadBatch = useCallback((count: number): FeedPhoto[] => {
+    const assets = sessionManager.current.getNextBatch(count);
     return assets.map(mapToFeedPhoto);
   }, []);
-
-  const preloadNextBatch = useCallback(async () => {
-    if (isPreloading.current || !sessionManager.current.hasMore()) {
-      return;
-    }
-
-    isPreloading.current = true;
-    try {
-      const batch = await loadBatch(FEED.batchSize);
-      preloadedPhotos.current = batch;
-    } catch (error) {
-      console.warn("Failed to preload batch:", error);
-    } finally {
-      isPreloading.current = false;
-    }
-  }, [loadBatch]);
 
   const initialize = useCallback(async () => {
     if (isInitialized.current) {
       return;
     }
 
+    const startTime = Date.now();
+    console.log("[PERF] initialize: started");
+
     setIsLoading(true);
     setError(null);
 
     try {
-      const allIds = await fetchAllPhotoIds();
+      // Fetch all photos (this uses getAssetsAsync which is fast)
+      const allPhotos = await fetchAllPhotos();
+      console.log(
+        `[PERF] initialize: fetched ${allPhotos.length} photos in ${Date.now() - startTime}ms`
+      );
 
-      if (allIds.length === 0) {
+      if (allPhotos.length === 0) {
         setPhotos([]);
         setHasMore(false);
         setIsLoading(false);
@@ -72,24 +56,24 @@ export function useInfinitePhotos() {
         return;
       }
 
-      sessionManager.current.initialize(allIds);
+      // Initialize session manager with shuffled photos
+      sessionManager.current.initialize(allPhotos);
 
-      const initialBatch = await loadBatch(FEED.batchSize);
+      // Get first batch to display
+      const initialBatch = loadBatch(FEED.displayBatchSize);
       setPhotos(initialBatch);
       setHasMore(sessionManager.current.hasMore());
 
-      // Start preloading next batch
-      preloadNextBatch();
-
       isInitialized.current = true;
+      console.log(`[PERF] initialize: total time ${Date.now() - startTime}ms`);
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Failed to load photos"));
     } finally {
       setIsLoading(false);
     }
-  }, [loadBatch, preloadNextBatch]);
+  }, [loadBatch]);
 
-  const loadMore = useCallback(async () => {
+  const loadMore = useCallback(() => {
     if (isLoadingMore || !hasMore || isLoading) {
       return;
     }
@@ -97,71 +81,58 @@ export function useInfinitePhotos() {
     setIsLoadingMore(true);
 
     try {
-      let newPhotos: FeedPhoto[];
-
-      // Use preloaded photos if available
-      if (preloadedPhotos.current.length > 0) {
-        newPhotos = preloadedPhotos.current;
-        preloadedPhotos.current = [];
-      } else {
-        newPhotos = await loadBatch(FEED.batchSize);
-      }
+      const newPhotos = loadBatch(FEED.displayBatchSize);
 
       if (newPhotos.length > 0) {
         setPhotos((prev) => [...prev, ...newPhotos]);
       }
 
       setHasMore(sessionManager.current.hasMore());
-
-      // Start preloading next batch
-      preloadNextBatch();
     } catch (err) {
       console.error("Failed to load more photos:", err);
     } finally {
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, hasMore, isLoading, loadBatch, preloadNextBatch]);
+  }, [isLoadingMore, hasMore, isLoading, loadBatch]);
 
   const refresh = useCallback(async () => {
     setIsRefreshing(true);
-    preloadedPhotos.current = [];
+
+    // Small delay to show the refresh indicator
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
     try {
+      // Re-shuffle existing photos
       sessionManager.current.reset();
 
-      const freshBatch = await loadBatch(FEED.batchSize);
+      const freshBatch = loadBatch(FEED.displayBatchSize);
       setPhotos(freshBatch);
       setHasMore(sessionManager.current.hasMore());
-
-      // Start preloading next batch
-      preloadNextBatch();
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Failed to refresh"));
     } finally {
       setIsRefreshing(false);
     }
-  }, [loadBatch, preloadNextBatch]);
+  }, [loadBatch]);
 
-  // Handler for scroll position to trigger preloading
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: Array<{ index: number | null }> }) => {
-      if (viewableItems.length === 0) return;
+      if (viewableItems.length === 0) {
+        return;
+      }
 
       const lastVisibleIndex = Math.max(
         ...viewableItems.map((item) => item.index ?? 0)
       );
       const totalLoaded = photos.length;
-      const threshold = totalLoaded * FEED.preloadThreshold;
+      const threshold = totalLoaded - FEED.displayBatchSize;
 
-      // If user has scrolled past 50% of loaded photos, start preloading
-      if (
-        lastVisibleIndex >= threshold &&
-        preloadedPhotos.current.length === 0
-      ) {
-        preloadNextBatch();
+      // If user is near the end, trigger load more
+      if (lastVisibleIndex >= threshold && !isLoadingMore && hasMore) {
+        loadMore();
       }
     },
-    [photos.length, preloadNextBatch]
+    [photos.length, isLoadingMore, hasMore, loadMore]
   );
 
   return {

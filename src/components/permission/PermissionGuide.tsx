@@ -2,10 +2,10 @@ import * as Linking from "expo-linking";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { COLORS } from "../../utils/constants";
 
-interface PermissionGuideProps {
+type PermissionGuideProps = {
   onRequestPermission: () => void;
   showSettingsButton?: boolean;
-}
+};
 
 export function PermissionGuide({
   onRequestPermission,

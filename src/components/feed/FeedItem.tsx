@@ -5,23 +5,27 @@ import { SIZES } from "../../utils/constants";
 import { MetadataSection } from "./MetadataSection";
 import { PhotoThumbnail } from "./PhotoThumbnail";
 
-interface FeedItemProps {
+type FeedItemProps = {
   photo: FeedPhoto;
-}
+};
 
 function FeedItemComponent({ photo }: FeedItemProps) {
   return (
     <View style={styles.container}>
       <PhotoThumbnail uri={photo.uri} />
-      <MetadataSection timeAgo={photo.timeAgo} title={photo.title} />
+      <View style={styles.metadataContainer}>
+        <MetadataSection timeAgo={photo.timeAgo} title={photo.title} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: SIZES.horizontalPadding,
     paddingBottom: SIZES.itemSpacing,
+  },
+  metadataContainer: {
+    paddingHorizontal: SIZES.horizontalPadding,
   },
 });
 

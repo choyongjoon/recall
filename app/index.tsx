@@ -1,14 +1,21 @@
 import { FlashList } from "@shopify/flash-list";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
+  Animated,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   RefreshControl,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { FeedItem } from "../src/components/feed/FeedItem";
+import { AppHeader, HEADER_HEIGHT } from "../src/components/header/AppHeader";
 import { PermissionGuide } from "../src/components/permission/PermissionGuide";
 import { useInfinitePhotos } from "../src/hooks/useInfinitePhotos";
 import { usePermissions } from "../src/hooks/usePermissions";
@@ -16,6 +23,10 @@ import type { FeedPhoto } from "../src/types/photo";
 import { COLORS } from "../src/utils/constants";
 
 export default function FeedScreen() {
+  const insets = useSafeAreaInsets();
+  const lastScrollY = useRef(0);
+  const headerTranslateY = useRef(new Animated.Value(0)).current;
+
   const {
     status,
     isLoading: isPermissionLoading,
@@ -42,6 +53,41 @@ export default function FeedScreen() {
     }
   }, [isGranted, initialize]);
 
+  const headerHeight = HEADER_HEIGHT + insets.top;
+
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const currentScrollY = event.nativeEvent.contentOffset.y;
+      const diff = currentScrollY - lastScrollY.current;
+
+      if (currentScrollY <= 0) {
+        // At top, show header
+        Animated.timing(headerTranslateY, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }).start();
+      } else if (diff > 0 && currentScrollY > headerHeight) {
+        // Scrolling down, hide header
+        Animated.timing(headerTranslateY, {
+          toValue: -headerHeight,
+          duration: 150,
+          useNativeDriver: true,
+        }).start();
+      } else if (diff < -10) {
+        // Scrolling up quickly, show header
+        Animated.timing(headerTranslateY, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }).start();
+      }
+
+      lastScrollY.current = currentScrollY;
+    },
+    [headerHeight, headerTranslateY]
+  );
+
   const renderItem = useCallback(
     ({ item }: { item: FeedPhoto }) => <FeedItem photo={item} />,
     []
@@ -50,7 +96,9 @@ export default function FeedScreen() {
   const keyExtractor = useCallback((item: FeedPhoto) => item.id, []);
 
   const renderFooter = useCallback(() => {
-    if (!isLoadingMore) return null;
+    if (!isLoadingMore) {
+      return null;
+    }
     return (
       <View style={styles.footer}>
         <ActivityIndicator color={COLORS.textSecondary} size="small" />
@@ -59,7 +107,9 @@ export default function FeedScreen() {
   }, [isLoadingMore]);
 
   const renderEmpty = useCallback(() => {
-    if (isLoading) return null;
+    if (isLoading) {
+      return null;
+    }
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>사진이 없습니다</Text>
@@ -118,27 +168,33 @@ export default function FeedScreen() {
   }
 
   return (
-    <SafeAreaView edges={["top"]} style={styles.container}>
+    <View style={styles.container}>
       <FlashList
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={{
+          paddingTop: headerHeight + 8,
+        }}
         data={photos}
         keyExtractor={keyExtractor}
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}
         onEndReached={hasMore ? loadMore : undefined}
         onEndReachedThreshold={0.5}
+        onScroll={handleScroll}
         onViewableItemsChanged={onViewableItemsChanged}
         refreshControl={
           <RefreshControl
             onRefresh={refresh}
+            progressViewOffset={headerHeight}
             refreshing={isRefreshing}
             tintColor={COLORS.textSecondary}
           />
         }
         renderItem={renderItem}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       />
-    </SafeAreaView>
+      <AppHeader translateY={headerTranslateY} />
+    </View>
   );
 }
 
@@ -173,9 +229,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.textSecondary,
     textAlign: "center",
-  },
-  listContent: {
-    paddingTop: 8,
   },
   footer: {
     paddingVertical: 20,

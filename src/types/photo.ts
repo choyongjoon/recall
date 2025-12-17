@@ -1,6 +1,6 @@
 import type * as MediaLibrary from "expo-media-library";
 
-export interface PhotoAsset {
+export type PhotoAsset = {
   id: string;
   uri: string;
   filename: string;
@@ -9,19 +9,19 @@ export interface PhotoAsset {
   creationTime: number | null;
   modificationTime: number | null;
   location: PhotoLocation | null;
-}
+};
 
-export interface PhotoLocation {
+export type PhotoLocation = {
   latitude: number;
   longitude: number;
   city?: string;
   country?: string;
-}
+};
 
-export interface FeedPhoto extends PhotoAsset {
+export type FeedPhoto = PhotoAsset & {
   title: string;
   timeAgo: string;
-}
+};
 
 export type PermissionStatus =
   | "undetermined"
@@ -29,7 +29,17 @@ export type PermissionStatus =
   | "denied"
   | "limited";
 
-export function mapAssetToPhoto(asset: MediaLibrary.AssetInfo): PhotoAsset {
+export function mapAssetToPhoto(
+  asset: MediaLibrary.Asset | MediaLibrary.AssetInfo
+): PhotoAsset {
+  const location =
+    "location" in asset && asset.location
+      ? {
+          latitude: asset.location.latitude,
+          longitude: asset.location.longitude,
+        }
+      : null;
+
   return {
     id: asset.id,
     uri: asset.uri,
@@ -38,11 +48,6 @@ export function mapAssetToPhoto(asset: MediaLibrary.AssetInfo): PhotoAsset {
     height: asset.height,
     creationTime: asset.creationTime ?? null,
     modificationTime: asset.modificationTime ?? null,
-    location: asset.location
-      ? {
-          latitude: asset.location.latitude,
-          longitude: asset.location.longitude,
-        }
-      : null,
+    location,
   };
 }

@@ -1,10 +1,12 @@
+import type { PhotoAsset } from "../types/photo";
+
 /**
  * Fisher-Yates shuffle algorithm
  * Shuffles array in-place with O(n) complexity
  */
 export function shuffle<T>(array: T[]): T[] {
   const result = [...array];
-  for (let i = result.length - 1; i > 0; i--) {
+  for (let i = result.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
     [result[i], result[j]] = [result[j], result[i]];
   }
@@ -15,46 +17,34 @@ export function shuffle<T>(array: T[]): T[] {
  * Manages photo session state to prevent duplicates
  */
 export class PhotoSessionManager {
-  private shownPhotoIds: Set<string> = new Set();
-  private shuffledIds: string[] = [];
+  private shuffledPhotos: PhotoAsset[] = [];
   private currentIndex = 0;
 
   /**
-   * Initialize with all available photo IDs
+   * Initialize with all available photos (shuffles them)
    */
-  initialize(photoIds: string[]): void {
-    this.shuffledIds = shuffle(photoIds);
+  initialize(photos: PhotoAsset[]): void {
+    this.shuffledPhotos = shuffle(photos);
     this.currentIndex = 0;
-    this.shownPhotoIds.clear();
   }
 
   /**
-   * Reset the session (called on pull-to-refresh)
+   * Reset the session (re-shuffles, called on pull-to-refresh)
    */
   reset(): void {
-    this.shuffledIds = shuffle(this.shuffledIds);
+    this.shuffledPhotos = shuffle(this.shuffledPhotos);
     this.currentIndex = 0;
-    this.shownPhotoIds.clear();
   }
 
   /**
-   * Get the next batch of photo IDs
+   * Get the next batch of photos
    */
-  getNextBatch(count: number): string[] {
-    const batch: string[] = [];
-
-    while (
-      batch.length < count &&
-      this.currentIndex < this.shuffledIds.length
-    ) {
-      const id = this.shuffledIds[this.currentIndex];
-      if (!this.shownPhotoIds.has(id)) {
-        batch.push(id);
-        this.shownPhotoIds.add(id);
-      }
-      this.currentIndex++;
-    }
-
+  getNextBatch(count: number): PhotoAsset[] {
+    const batch = this.shuffledPhotos.slice(
+      this.currentIndex,
+      this.currentIndex + count
+    );
+    this.currentIndex += batch.length;
     return batch;
   }
 
@@ -62,20 +52,20 @@ export class PhotoSessionManager {
    * Check if there are more photos available
    */
   hasMore(): boolean {
-    return this.currentIndex < this.shuffledIds.length;
+    return this.currentIndex < this.shuffledPhotos.length;
   }
 
   /**
    * Get total number of available photos
    */
   getTotalCount(): number {
-    return this.shuffledIds.length;
+    return this.shuffledPhotos.length;
   }
 
   /**
    * Get number of photos already shown
    */
   getShownCount(): number {
-    return this.shownPhotoIds.size;
+    return this.currentIndex;
   }
 }

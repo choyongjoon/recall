@@ -1,16 +1,17 @@
 import { Image } from "expo-image";
-import { memo } from "react";
+import { memo, useState } from "react";
 import { StyleSheet, useWindowDimensions, View } from "react-native";
 import { COLORS, SIZES } from "../../utils/constants";
 
-interface PhotoThumbnailProps {
+type PhotoThumbnailProps = {
   uri: string;
-}
+};
 
 function PhotoThumbnailComponent({ uri }: PhotoThumbnailProps) {
   const { width: screenWidth } = useWindowDimensions();
-  const containerWidth = screenWidth - SIZES.horizontalPadding * 2;
+  const containerWidth = screenWidth;
   const containerHeight = containerWidth / SIZES.thumbnailAspectRatio;
+  const [isLoaded, setIsLoaded] = useState(false);
 
   return (
     <View
@@ -19,12 +20,14 @@ function PhotoThumbnailComponent({ uri }: PhotoThumbnailProps) {
         {
           width: containerWidth,
           height: containerHeight,
+          backgroundColor: isLoaded ? COLORS.letterbox : COLORS.skeleton,
         },
       ]}
     >
       <Image
         cachePolicy="memory-disk"
         contentFit="contain"
+        onLoad={() => setIsLoaded(true)}
         source={{ uri }}
         style={styles.image}
         transition={200}
@@ -34,11 +37,7 @@ function PhotoThumbnailComponent({ uri }: PhotoThumbnailProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: COLORS.letterbox,
-    borderRadius: 12,
-    overflow: "hidden",
-  },
+  container: {},
   image: {
     width: "100%",
     height: "100%",

@@ -1,6 +1,8 @@
 import type { PhotoAsset } from "../types/photo";
 import { formatDateForTitle } from "./formatters";
 
+const FILE_EXTENSION_REGEX = /\.[^/.]+$/;
+
 export function generatePhotoTitle(photo: PhotoAsset): string {
   const { creationTime, location, filename } = photo;
 
@@ -19,7 +21,7 @@ export function generatePhotoTitle(photo: PhotoAsset): string {
 
   // Priority 3: Filename (remove extension)
   if (filename) {
-    const nameWithoutExt = filename.replace(/\.[^/.]+$/, "");
+    const nameWithoutExt = filename.replace(FILE_EXTENSION_REGEX, "");
     if (nameWithoutExt && nameWithoutExt.length > 0) {
       return nameWithoutExt;
     }

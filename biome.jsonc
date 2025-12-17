@@ -1,15 +1,15 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "extends": [
-    "ultracite/core",
-    "ultracite/react"
-  ],
+  "extends": ["ultracite/core", "ultracite/react"],
   "linter": {
     "enabled": true,
     "rules": {
       "style": {
         "useFilenamingConvention": "off"
       },
+      "performance": {
+        "noNamespaceImport": "off"
+      }
     }
   }
 }
