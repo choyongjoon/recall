@@ -5,7 +5,6 @@ import {
   Animated,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
-  RefreshControl,
   StyleSheet,
   Text,
   View,
@@ -17,6 +16,11 @@ import {
 import { FeedItem } from "../src/components/feed/FeedItem";
 import { AppHeader, HEADER_HEIGHT } from "../src/components/header/AppHeader";
 import { PermissionGuide } from "../src/components/permission/PermissionGuide";
+import {
+  HiddenRefreshControl,
+  RefreshProgressBar,
+  useRefreshProgress,
+} from "../src/components/refresh/CustomRefreshControl";
 import { useInfinitePhotos } from "../src/hooks/useInfinitePhotos";
 import { usePermissions } from "../src/hooks/usePermissions";
 import type { FeedPhoto } from "../src/types/photo";
@@ -26,6 +30,9 @@ export default function FeedScreen() {
   const insets = useSafeAreaInsets();
   const lastScrollY = useRef(0);
   const headerTranslateY = useRef(new Animated.Value(0)).current;
+
+  const { pullProgress, handleScrollForRefresh, setRefreshing } =
+    useRefreshProgress();
 
   const {
     status,
@@ -53,12 +60,19 @@ export default function FeedScreen() {
     }
   }, [isGranted, initialize]);
 
+  useEffect(() => {
+    setRefreshing(isRefreshing);
+  }, [isRefreshing, setRefreshing]);
+
   const headerHeight = HEADER_HEIGHT + insets.top;
 
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const currentScrollY = event.nativeEvent.contentOffset.y;
       const diff = currentScrollY - lastScrollY.current;
+
+      // Update refresh progress bar
+      handleScrollForRefresh(event);
 
       if (currentScrollY <= 0) {
         // At top, show header
@@ -85,7 +99,7 @@ export default function FeedScreen() {
 
       lastScrollY.current = currentScrollY;
     },
-    [headerHeight, headerTranslateY]
+    [headerHeight, headerTranslateY, handleScrollForRefresh]
   );
 
   const renderItem = useCallback(
@@ -182,17 +196,17 @@ export default function FeedScreen() {
         onScroll={handleScroll}
         onViewableItemsChanged={onViewableItemsChanged}
         refreshControl={
-          <RefreshControl
+          <HiddenRefreshControl
             onRefresh={refresh}
             progressViewOffset={headerHeight}
             refreshing={isRefreshing}
-            tintColor={COLORS.textSecondary}
           />
         }
         renderItem={renderItem}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       />
+      <RefreshProgressBar pullProgress={pullProgress} top={headerHeight} />
       <AppHeader translateY={headerTranslateY} />
     </View>
   );
