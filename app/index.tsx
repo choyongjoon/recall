@@ -30,6 +30,7 @@ export default function FeedScreen() {
   const insets = useSafeAreaInsets();
   const lastScrollY = useRef(0);
   const headerTranslateY = useRef(new Animated.Value(0)).current;
+  const isHeaderVisible = useRef(true);
 
   const { pullProgress, handleScrollForRefresh, setRefreshing } =
     useRefreshProgress();
@@ -74,26 +75,28 @@ export default function FeedScreen() {
       // Update refresh progress bar
       handleScrollForRefresh(event);
 
+      // Determine if header should be visible
+      let shouldShow = isHeaderVisible.current;
+
       if (currentScrollY <= 0) {
-        // At top, show header
-        Animated.timing(headerTranslateY, {
-          toValue: 0,
-          duration: 150,
+        // At top, always show
+        shouldShow = true;
+      } else if (diff > 5) {
+        // Scrolling down
+        shouldShow = false;
+      } else if (diff < -5) {
+        // Scrolling up
+        shouldShow = true;
+      }
+
+      // Only animate if state changed
+      if (shouldShow !== isHeaderVisible.current) {
+        isHeaderVisible.current = shouldShow;
+        Animated.spring(headerTranslateY, {
+          toValue: shouldShow ? 0 : -headerHeight,
           useNativeDriver: true,
-        }).start();
-      } else if (diff > 0 && currentScrollY > headerHeight) {
-        // Scrolling down, hide header
-        Animated.timing(headerTranslateY, {
-          toValue: -headerHeight,
-          duration: 150,
-          useNativeDriver: true,
-        }).start();
-      } else if (diff < -10) {
-        // Scrolling up quickly, show header
-        Animated.timing(headerTranslateY, {
-          toValue: 0,
-          duration: 150,
-          useNativeDriver: true,
+          tension: 80,
+          friction: 12,
         }).start();
       }
 
