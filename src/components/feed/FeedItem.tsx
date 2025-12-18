@@ -1,5 +1,7 @@
-import { memo } from "react";
-import { StyleSheet, View } from "react-native";
+import { useRouter } from "expo-router";
+import { memo, useCallback, useRef } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+import { usePhotoContext } from "../../context/PhotoContext";
 import type { FeedPhoto } from "../../types/photo";
 import { SIZES } from "../../utils/constants";
 import { MetadataSection } from "./MetadataSection";
@@ -10,13 +12,29 @@ type FeedItemProps = {
 };
 
 function FeedItemComponent({ photo }: FeedItemProps) {
+  const router = useRouter();
+  const { setSelectedPhoto, setThumbnailPosition } = usePhotoContext();
+  const thumbnailRef = useRef<View>(null);
+
+  const handlePress = useCallback(() => {
+    if (thumbnailRef.current) {
+      thumbnailRef.current.measureInWindow((x, y, width, height) => {
+        setThumbnailPosition({ x, y, width, height, pageY: y });
+        setSelectedPhoto(photo);
+        router.push(`/photo/${encodeURIComponent(photo.id)}`);
+      });
+    }
+  }, [photo, router, setSelectedPhoto, setThumbnailPosition]);
+
   return (
-    <View style={styles.container}>
-      <PhotoThumbnail uri={photo.uri} />
+    <Pressable onPress={handlePress} style={styles.container}>
+      <View collapsable={false} ref={thumbnailRef}>
+        <PhotoThumbnail uri={photo.uri} />
+      </View>
       <View style={styles.metadataContainer}>
         <MetadataSection timeAgo={photo.timeAgo} title={photo.title} />
       </View>
-    </View>
+    </Pressable>
   );
 }
 

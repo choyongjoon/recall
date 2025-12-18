@@ -185,10 +185,10 @@ export default function FeedScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <FlashList
         contentContainerStyle={{
-          paddingTop: headerHeight + 8,
+          paddingTop: HEADER_HEIGHT + 8,
         }}
         data={photos}
         keyExtractor={keyExtractor}
