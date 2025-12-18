@@ -1,7 +1,9 @@
 import { Image } from "expo-image";
+import * as MediaLibrary from "expo-media-library";
 import { useRouter } from "expo-router";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   Dimensions,
   PanResponder,
@@ -12,6 +14,10 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePhotoContext } from "../../src/context/PhotoContext";
+import {
+  mapAssetInfoToPhotoInfo,
+  type PhotoAssetInfo,
+} from "../../src/types/photo";
 import { COLORS, SIZES } from "../../src/utils/constants";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -23,6 +29,28 @@ export default function PhotoDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { selectedPhoto, thumbnailPosition } = usePhotoContext();
+
+  // Full asset info with EXIF
+  const [assetInfo, setAssetInfo] = useState<PhotoAssetInfo | null>(null);
+  const [isLoadingInfo, setIsLoadingInfo] = useState(true);
+
+  // Fetch full asset info on mount
+  useEffect(() => {
+    if (!selectedPhoto) return;
+
+    const fetchAssetInfo = async () => {
+      try {
+        const info = await MediaLibrary.getAssetInfoAsync(selectedPhoto.id);
+        setAssetInfo(mapAssetInfoToPhotoInfo(info));
+      } catch (error) {
+        console.error("Failed to fetch asset info:", error);
+      } finally {
+        setIsLoadingInfo(false);
+      }
+    };
+
+    fetchAssetInfo();
+  }, [selectedPhoto]);
 
   // Calculate starting position (from thumbnail) and target (top of screen below safe area)
   const getStartPosition = () => {
@@ -199,8 +227,17 @@ export default function PhotoDetailScreen() {
     });
   };
 
-  const formatFileSize = (width: number, height: number) =>
-    `${width} x ${height}`;
+  const formatExposureTime = (time: number) => {
+    if (time >= 1) return `${time}s`;
+    return `1/${Math.round(1 / time)}s`;
+  };
+
+  const formatFlash = (flash: number) => {
+    // EXIF flash values
+    if (flash === 0) return "No Flash";
+    if (flash & 1) return "Flash Fired";
+    return "No Flash";
+  };
 
   return (
     <View style={styles.container}>
@@ -269,36 +306,148 @@ export default function PhotoDetailScreen() {
               />
               <MetadataRow
                 label="Dimensions"
-                value={formatFileSize(
-                  selectedPhoto.width,
-                  selectedPhoto.height
-                )}
+                value={`${selectedPhoto.width} x ${selectedPhoto.height}`}
               />
               <MetadataRow
                 label="Aspect Ratio"
                 value={(selectedPhoto.width / selectedPhoto.height).toFixed(2)}
               />
+              {assetInfo?.isFavorite !== undefined && (
+                <MetadataRow
+                  label="Favorite"
+                  value={assetInfo.isFavorite ? "Yes" : "No"}
+                />
+              )}
 
-              {selectedPhoto.location && (
+              {/* Camera & EXIF Section */}
+              {isLoadingInfo ? (
+                <View style={styles.loadingSection}>
+                  <ActivityIndicator
+                    color={COLORS.textSecondary}
+                    size="small"
+                  />
+                  <Text style={styles.loadingText}>Loading EXIF data...</Text>
+                </View>
+              ) : (
+                assetInfo?.exif && (
+                  <>
+                    <Text style={[styles.sectionTitle, styles.newSection]}>
+                      Camera
+                    </Text>
+                    {assetInfo.exif.make && (
+                      <MetadataRow label="Make" value={assetInfo.exif.make} />
+                    )}
+                    {assetInfo.exif.model && (
+                      <MetadataRow label="Model" value={assetInfo.exif.model} />
+                    )}
+                    {assetInfo.exif.lensModel && (
+                      <MetadataRow
+                        label="Lens"
+                        value={assetInfo.exif.lensModel}
+                      />
+                    )}
+                    {assetInfo.exif.software && (
+                      <MetadataRow
+                        label="Software"
+                        value={assetInfo.exif.software}
+                      />
+                    )}
+
+                    {(assetInfo.exif.fNumber ||
+                      assetInfo.exif.exposureTime ||
+                      assetInfo.exif.iso ||
+                      assetInfo.exif.focalLength) && (
+                      <>
+                        <Text style={[styles.sectionTitle, styles.newSection]}>
+                          Capture Settings
+                        </Text>
+                        {assetInfo.exif.fNumber && (
+                          <MetadataRow
+                            label="Aperture"
+                            value={`f/${assetInfo.exif.fNumber}`}
+                          />
+                        )}
+                        {assetInfo.exif.exposureTime && (
+                          <MetadataRow
+                            label="Shutter Speed"
+                            value={formatExposureTime(
+                              assetInfo.exif.exposureTime
+                            )}
+                          />
+                        )}
+                        {assetInfo.exif.iso && (
+                          <MetadataRow
+                            label="ISO"
+                            value={String(assetInfo.exif.iso)}
+                          />
+                        )}
+                        {assetInfo.exif.focalLength && (
+                          <MetadataRow
+                            label="Focal Length"
+                            value={`${assetInfo.exif.focalLength}mm${
+                              assetInfo.exif.focalLengthIn35mm
+                                ? ` (${assetInfo.exif.focalLengthIn35mm}mm equiv)`
+                                : ""
+                            }`}
+                          />
+                        )}
+                        {assetInfo.exif.flash !== undefined && (
+                          <MetadataRow
+                            label="Flash"
+                            value={formatFlash(assetInfo.exif.flash)}
+                          />
+                        )}
+                        {assetInfo.exif.whiteBalance !== undefined && (
+                          <MetadataRow
+                            label="White Balance"
+                            value={
+                              assetInfo.exif.whiteBalance === 0
+                                ? "Auto"
+                                : "Manual"
+                            }
+                          />
+                        )}
+                      </>
+                    )}
+                  </>
+                )
+              )}
+
+              {/* Location Section */}
+              {(selectedPhoto.location || assetInfo?.exif?.gpsLatitude) && (
                 <>
-                  <Text style={[styles.sectionTitle, styles.locationSection]}>
+                  <Text style={[styles.sectionTitle, styles.newSection]}>
                     Location
                   </Text>
                   <MetadataRow
                     label="Latitude"
-                    value={selectedPhoto.location.latitude.toFixed(6)}
+                    value={(
+                      selectedPhoto.location?.latitude ??
+                      assetInfo?.exif?.gpsLatitude ??
+                      0
+                    ).toFixed(6)}
                   />
                   <MetadataRow
                     label="Longitude"
-                    value={selectedPhoto.location.longitude.toFixed(6)}
+                    value={(
+                      selectedPhoto.location?.longitude ??
+                      assetInfo?.exif?.gpsLongitude ??
+                      0
+                    ).toFixed(6)}
                   />
-                  {selectedPhoto.location.city && (
+                  {assetInfo?.exif?.gpsAltitude && (
+                    <MetadataRow
+                      label="Altitude"
+                      value={`${assetInfo.exif.gpsAltitude.toFixed(1)}m`}
+                    />
+                  )}
+                  {selectedPhoto.location?.city && (
                     <MetadataRow
                       label="City"
                       value={selectedPhoto.location.city}
                     />
                   )}
-                  {selectedPhoto.location.country && (
+                  {selectedPhoto.location?.country && (
                     <MetadataRow
                       label="Country"
                       value={selectedPhoto.location.country}
@@ -376,8 +525,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.separator,
   },
-  locationSection: {
+  newSection: {
     marginTop: 24,
+  },
+  loadingSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 16,
+    gap: 8,
+  },
+  loadingText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
   },
   metadataRow: {
     flexDirection: "row",
