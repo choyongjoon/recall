@@ -98,8 +98,8 @@ function PortraitSectionComponent({ photos }: PortraitSectionProps) {
   return (
     <View style={[styles.container, { paddingHorizontal: containerPadding }]}>
       <View style={styles.grid}>
-        {rows.map((row, rowIndex) => (
-          <View key={`row-${rowIndex}`} style={styles.row}>
+        {rows.map((row) => (
+          <View key={row.map((p) => p.id).join("-")} style={styles.row}>
             {row.map((photo) => (
               <PortraitThumbnail
                 height={itemHeight}
