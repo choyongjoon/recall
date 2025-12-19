@@ -14,7 +14,7 @@ export const SIZES = {
   horizontalPadding: 8,
   itemSpacing: 16,
   thumbnailMetadataGap: 12,
-  titleFontSize: 14,
+  titleFontSize: 16,
   timeFontSize: 12,
   titleMaxLines: 2,
 } as const;

@@ -48,5 +48,6 @@ export function formatDateForTitle(timestamp: number): string {
   const date = new Date(timestamp);
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
-  return `${year}년 ${month}월`;
+  const day = date.getDate();
+  return `${year}년 ${month}월 ${day}일`;
 }

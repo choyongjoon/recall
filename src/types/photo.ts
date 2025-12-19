@@ -59,6 +59,10 @@ export type FeedPhoto = PhotoAsset & {
   timeAgo: string;
 };
 
+export function isPortraitPhoto(photo: PhotoAsset): boolean {
+  return photo.height > photo.width;
+}
+
 export type PermissionStatus =
   | "undetermined"
   | "granted"

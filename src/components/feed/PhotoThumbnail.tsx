@@ -1,16 +1,19 @@
 import { Image } from "expo-image";
 import { memo, useState } from "react";
 import { StyleSheet, useWindowDimensions, View } from "react-native";
-import { COLORS, SIZES } from "../../utils/constants";
+import { COLORS } from "../../utils/constants";
 
 type PhotoThumbnailProps = {
   uri: string;
+  width: number;
+  height: number;
 };
 
-function PhotoThumbnailComponent({ uri }: PhotoThumbnailProps) {
+function PhotoThumbnailComponent({ uri, width, height }: PhotoThumbnailProps) {
   const { width: screenWidth } = useWindowDimensions();
+  const aspectRatio = width / height;
   const containerWidth = screenWidth;
-  const containerHeight = containerWidth / SIZES.thumbnailAspectRatio;
+  const containerHeight = containerWidth / aspectRatio;
   const [isLoaded, setIsLoaded] = useState(false);
 
   return (
@@ -20,13 +23,13 @@ function PhotoThumbnailComponent({ uri }: PhotoThumbnailProps) {
         {
           width: containerWidth,
           height: containerHeight,
-          backgroundColor: isLoaded ? COLORS.letterbox : COLORS.skeleton,
+          backgroundColor: isLoaded ? "transparent" : COLORS.skeleton,
         },
       ]}
     >
       <Image
         cachePolicy="memory-disk"
-        contentFit="contain"
+        contentFit="cover"
         onLoadEnd={() => setIsLoaded(true)}
         onLoadStart={() => setIsLoaded(false)}
         recyclingKey={uri}

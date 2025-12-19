@@ -1,5 +1,5 @@
 import { FlashList } from "@shopify/flash-list";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -14,6 +14,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import { FeedItem } from "../src/components/feed/FeedItem";
+import { PortraitSection } from "../src/components/feed/PortraitSection";
 import { AppHeader, HEADER_HEIGHT } from "../src/components/header/AppHeader";
 import { PermissionGuide } from "../src/components/permission/PermissionGuide";
 import {
@@ -23,8 +24,63 @@ import {
 } from "../src/components/refresh/CustomRefreshControl";
 import { useInfinitePhotos } from "../src/hooks/useInfinitePhotos";
 import { usePermissions } from "../src/hooks/usePermissions";
-import type { FeedPhoto } from "../src/types/photo";
+import { type FeedPhoto, isPortraitPhoto } from "../src/types/photo";
 import { COLORS } from "../src/utils/constants";
+
+// Feed item types for mixed content
+type FeedItemType =
+  | { type: "landscape"; photo: FeedPhoto }
+  | { type: "portrait-section"; photos: FeedPhoto[]; sectionIndex: number };
+
+const LANDSCAPE_BETWEEN_PORTRAIT_SECTIONS = 5;
+const MAX_PORTRAIT_PER_SECTION = 6;
+
+function buildMixedFeed(
+  portrait: FeedPhoto[],
+  landscape: FeedPhoto[]
+): FeedItemType[] {
+  const items: FeedItemType[] = [];
+  let portraitIndex = 0;
+  let landscapeIndex = 0;
+  let sectionIndex = 0;
+
+  while (portraitIndex < portrait.length || landscapeIndex < landscape.length) {
+    // Add portrait section if available
+    if (portraitIndex < portrait.length) {
+      const sectionPhotos = portrait.slice(
+        portraitIndex,
+        portraitIndex + MAX_PORTRAIT_PER_SECTION
+      );
+      items.push({
+        type: "portrait-section",
+        photos: sectionPhotos,
+        sectionIndex,
+      });
+      portraitIndex += MAX_PORTRAIT_PER_SECTION;
+      sectionIndex += 1;
+    }
+
+    // Add landscape photos
+    const landscapeEnd = Math.min(
+      landscapeIndex + LANDSCAPE_BETWEEN_PORTRAIT_SECTIONS,
+      landscape.length
+    );
+    for (let i = landscapeIndex; i < landscapeEnd; i += 1) {
+      items.push({ type: "landscape", photo: landscape[i] });
+    }
+    landscapeIndex = landscapeEnd;
+
+    // If no more portrait photos, add remaining landscape
+    if (portraitIndex >= portrait.length && landscapeIndex < landscape.length) {
+      for (let i = landscapeIndex; i < landscape.length; i += 1) {
+        items.push({ type: "landscape", photo: landscape[i] });
+      }
+      break;
+    }
+  }
+
+  return items;
+}
 
 export default function FeedScreen() {
   const insets = useSafeAreaInsets();
@@ -64,6 +120,22 @@ export default function FeedScreen() {
   useEffect(() => {
     setRefreshing(isRefreshing);
   }, [isRefreshing, setRefreshing]);
+
+  // Create mixed feed with portrait sections interspersed
+  const feedItems = useMemo(() => {
+    const portrait: FeedPhoto[] = [];
+    const landscape: FeedPhoto[] = [];
+
+    for (const photo of photos) {
+      if (isPortraitPhoto(photo)) {
+        portrait.push(photo);
+      } else {
+        landscape.push(photo);
+      }
+    }
+
+    return buildMixedFeed(portrait, landscape);
+  }, [photos]);
 
   const headerHeight = HEADER_HEIGHT + insets.top;
 
@@ -105,12 +177,19 @@ export default function FeedScreen() {
     [headerHeight, headerTranslateY, handleScrollForRefresh]
   );
 
-  const renderItem = useCallback(
-    ({ item }: { item: FeedPhoto }) => <FeedItem photo={item} />,
-    []
-  );
+  const renderItem = useCallback(({ item }: { item: FeedItemType }) => {
+    if (item.type === "portrait-section") {
+      return <PortraitSection photos={item.photos} />;
+    }
+    return <FeedItem photo={item.photo} />;
+  }, []);
 
-  const keyExtractor = useCallback((item: FeedPhoto) => item.id, []);
+  const keyExtractor = useCallback((item: FeedItemType) => {
+    if (item.type === "portrait-section") {
+      return `portrait-section-${item.sectionIndex}`;
+    }
+    return item.photo.id;
+  }, []);
 
   const renderFooter = useCallback(() => {
     if (!isLoadingMore) {
@@ -190,7 +269,8 @@ export default function FeedScreen() {
         contentContainerStyle={{
           paddingTop: HEADER_HEIGHT + 8,
         }}
-        data={photos}
+        data={feedItems}
+        getItemType={(item) => item.type}
         keyExtractor={keyExtractor}
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}

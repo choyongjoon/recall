@@ -18,10 +18,9 @@ import {
   mapAssetInfoToPhotoInfo,
   type PhotoAssetInfo,
 } from "../../src/types/photo";
-import { COLORS, SIZES } from "../../src/utils/constants";
+import { COLORS } from "../../src/utils/constants";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-const IMAGE_HEIGHT = SCREEN_WIDTH / SIZES.thumbnailAspectRatio;
 
 const DISMISS_THRESHOLD = 150;
 
@@ -30,13 +29,20 @@ export default function PhotoDetailScreen() {
   const insets = useSafeAreaInsets();
   const { selectedPhoto, thumbnailPosition } = usePhotoContext();
 
+  // Calculate image height based on original aspect ratio
+  const imageHeight = selectedPhoto
+    ? SCREEN_WIDTH / (selectedPhoto.width / selectedPhoto.height)
+    : SCREEN_WIDTH;
+
   // Full asset info with EXIF
   const [assetInfo, setAssetInfo] = useState<PhotoAssetInfo | null>(null);
   const [isLoadingInfo, setIsLoadingInfo] = useState(true);
 
   // Fetch full asset info on mount
   useEffect(() => {
-    if (!selectedPhoto) return;
+    if (!selectedPhoto) {
+      return;
+    }
 
     const fetchAssetInfo = async () => {
       try {
@@ -63,7 +69,7 @@ export default function PhotoDetailScreen() {
     const startY =
       thumbnailPosition.pageY -
       insets.top -
-      (IMAGE_HEIGHT * startScale - thumbnailPosition.height) / 2;
+      (imageHeight * startScale - thumbnailPosition.height) / 2;
     return { x: startX, y: startY, scale: startScale };
   };
 
@@ -132,7 +138,7 @@ export default function PhotoDetailScreen() {
   const handleDismiss = () => {
     // Target: bottom right corner, small thumbnail
     const targetX = SCREEN_WIDTH * 0.3;
-    const targetY = SCREEN_HEIGHT - insets.top - IMAGE_HEIGHT * 0.5;
+    const targetY = SCREEN_HEIGHT - insets.top - imageHeight * 0.5;
     const targetScale = 0.2;
 
     Animated.parallel([
@@ -256,6 +262,7 @@ export default function PhotoDetailScreen() {
           style={[
             styles.imageContainer,
             {
+              height: imageHeight,
               transform: [
                 { translateX: imageTranslateX },
                 { translateY: imageTranslateY },
@@ -266,7 +273,7 @@ export default function PhotoDetailScreen() {
         >
           <Image
             cachePolicy="memory-disk"
-            contentFit="contain"
+            contentFit="cover"
             source={{ uri: selectedPhoto.uri }}
             style={styles.image}
           />
@@ -485,8 +492,6 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: SCREEN_WIDTH,
-    height: IMAGE_HEIGHT,
-    backgroundColor: COLORS.letterbox,
   },
   image: {
     width: "100%",

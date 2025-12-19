@@ -29,7 +29,11 @@ function FeedItemComponent({ photo }: FeedItemProps) {
   return (
     <Pressable onPress={handlePress} style={styles.container}>
       <View collapsable={false} ref={thumbnailRef}>
-        <PhotoThumbnail uri={photo.uri} />
+        <PhotoThumbnail
+          height={photo.height}
+          uri={photo.uri}
+          width={photo.width}
+        />
       </View>
       <View style={styles.metadataContainer}>
         <MetadataSection timeAgo={photo.timeAgo} title={photo.title} />
@@ -40,7 +44,7 @@ function FeedItemComponent({ photo }: FeedItemProps) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: SIZES.itemSpacing,
+    paddingBottom: 32,
   },
   metadataContainer: {
     paddingHorizontal: SIZES.horizontalPadding,
