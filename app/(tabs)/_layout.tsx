@@ -1,8 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Tabs } from "expo-router";
+import { Tabs, usePathname } from "expo-router";
+import { useCallback } from "react";
 import { COLORS } from "../../src/utils/constants";
+import { triggerScrollToTop } from "../../src/utils/scrollToTop";
 
 export default function TabsLayout() {
+  const pathname = usePathname();
+
+  const handleHomePress = useCallback(() => {
+    if (pathname === "/" || pathname === "/index") {
+      triggerScrollToTop();
+    }
+  }, [pathname]);
+
   return (
     <Tabs
       screenOptions={{
@@ -20,6 +30,9 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
+        listeners={{
+          tabPress: handleHomePress,
+        }}
         name="index"
         options={{
           title: "홈",

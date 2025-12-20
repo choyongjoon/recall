@@ -1,4 +1,4 @@
-import { FlashList } from "@shopify/flash-list";
+import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   ActivityIndicator,
@@ -29,6 +29,7 @@ import { useInfinitePhotos } from "../../src/hooks/useInfinitePhotos";
 import { usePermissions } from "../../src/hooks/usePermissions";
 import { type FeedPhoto, isPortraitPhoto } from "../../src/types/photo";
 import { COLORS } from "../../src/utils/constants";
+import { addScrollToTopListener } from "../../src/utils/scrollToTop";
 
 // Feed item types for mixed content
 type FeedItemType =
@@ -90,6 +91,7 @@ export default function FeedScreen() {
   const lastScrollY = useRef(0);
   const headerTranslateY = useRef(new Animated.Value(0)).current;
   const isHeaderVisible = useRef(true);
+  const listRef = useRef<FlashListRef<FeedItemType> | null>(null);
 
   const { pullProgress, handleScrollForRefresh, setRefreshing } =
     useRefreshProgress();
@@ -119,6 +121,21 @@ export default function FeedScreen() {
       initialize();
     }
   }, [isGranted, initialize]);
+
+  // Listen for scroll to top events
+  useEffect(() => {
+    return addScrollToTopListener(() => {
+      listRef.current?.scrollToOffset({ offset: 0, animated: true });
+      // Also show the header
+      isHeaderVisible.current = true;
+      Animated.spring(headerTranslateY, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 80,
+        friction: 12,
+      }).start();
+    });
+  }, [headerTranslateY]);
 
   useEffect(() => {
     setRefreshing(isRefreshing);
@@ -281,6 +298,7 @@ export default function FeedScreen() {
         onEndReachedThreshold={0.5}
         onScroll={handleScroll}
         onViewableItemsChanged={onViewableItemsChanged}
+        ref={listRef}
         refreshControl={
           <HiddenRefreshControl
             onRefresh={refresh}

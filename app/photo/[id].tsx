@@ -3,6 +3,7 @@ import * as MediaLibrary from "expo-media-library";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   Dimensions,
   PanResponder,
@@ -13,14 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ActionButtons } from "../../src/components/detail/ActionButtons";
-import {
-  CameraSection,
-  CaptureSettingsSection,
-  formatDate,
-  LoadingSection,
-  LocationSection,
-  MetadataRow,
-} from "../../src/components/detail/PhotoMetadata";
+import { LocationMap } from "../../src/components/detail/LocationMap";
 import { PlaylistBottomSheet } from "../../src/components/detail/PlaylistBottomSheet";
 import { usePhotoContext } from "../../src/context/PhotoContext";
 import {
@@ -44,8 +38,9 @@ export default function PhotoDetailScreen() {
     : SCREEN_WIDTH;
 
   const [assetInfo, setAssetInfo] = useState<PhotoAssetInfo | null>(null);
-  const [isLoadingInfo, setIsLoadingInfo] = useState(true);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(true);
   const [showPlaylistSheet, setShowPlaylistSheet] = useState(false);
+  const isMapTouchedRef = useRef(false);
 
   const handleSavePress = useCallback(() => {
     setShowPlaylistSheet(true);
@@ -53,6 +48,14 @@ export default function PhotoDetailScreen() {
 
   const handleClosePlaylistSheet = useCallback(() => {
     setShowPlaylistSheet(false);
+  }, []);
+
+  const handleMapTouchStart = useCallback(() => {
+    isMapTouchedRef.current = true;
+  }, []);
+
+  const handleMapTouchEnd = useCallback(() => {
+    isMapTouchedRef.current = false;
   }, []);
 
   useEffect(() => {
@@ -67,7 +70,7 @@ export default function PhotoDetailScreen() {
       } catch (error) {
         console.error("Failed to fetch asset info:", error);
       } finally {
-        setIsLoadingInfo(false);
+        setIsLoadingLocation(false);
       }
     };
 
@@ -184,7 +187,9 @@ export default function PhotoDetailScreen() {
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, gestureState) =>
-        gestureState.dy > 10 && Math.abs(gestureState.dx) < 30,
+        !isMapTouchedRef.current &&
+        gestureState.dy > 10 &&
+        Math.abs(gestureState.dx) < 30,
       onPanResponderGrant: () => {
         dragTranslateY.extractOffset();
       },
@@ -288,45 +293,54 @@ export default function PhotoDetailScreen() {
             />
 
             <View style={styles.metadataSection}>
-              <Text style={styles.sectionTitle}>Details</Text>
+              <View style={styles.metadataRow}>
+                <Text style={styles.metadataLabel}>찍은 시간</Text>
+                <Text style={styles.metadataValue}>
+                  {selectedPhoto.creationTime
+                    ? new Date(selectedPhoto.creationTime).toLocaleDateString(
+                        "ko-KR",
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                          weekday: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      )
+                    : "알 수 없음"}
+                </Text>
+              </View>
 
-              <MetadataRow label="Filename" value={selectedPhoto.filename} />
-              <MetadataRow
-                label="Created"
-                value={formatDate(selectedPhoto.creationTime)}
-              />
-              <MetadataRow
-                label="Modified"
-                value={formatDate(selectedPhoto.modificationTime)}
-              />
-              <MetadataRow
-                label="Dimensions"
-                value={`${selectedPhoto.width} x ${selectedPhoto.height}`}
-              />
-              <MetadataRow
-                label="Aspect Ratio"
-                value={(selectedPhoto.width / selectedPhoto.height).toFixed(2)}
-              />
-              {assetInfo?.isFavorite !== undefined ? (
-                <MetadataRow
-                  label="Favorite"
-                  value={assetInfo.isFavorite ? "Yes" : "No"}
+              {isLoadingLocation ? (
+                <View style={styles.locationContainer}>
+                  <Text style={styles.locationLabel}>촬영 위치</Text>
+                  <View style={styles.loadingLocation}>
+                    <ActivityIndicator
+                      color={COLORS.textSecondary}
+                      size="small"
+                    />
+                  </View>
+                </View>
+              ) : null}
+
+              {!isLoadingLocation &&
+              (selectedPhoto.location || assetInfo?.exif?.gpsLatitude) ? (
+                <LocationMap
+                  latitude={
+                    selectedPhoto.location?.latitude ??
+                    assetInfo?.exif?.gpsLatitude ??
+                    0
+                  }
+                  longitude={
+                    selectedPhoto.location?.longitude ??
+                    assetInfo?.exif?.gpsLongitude ??
+                    0
+                  }
+                  onTouchEnd={handleMapTouchEnd}
+                  onTouchStart={handleMapTouchStart}
                 />
               ) : null}
-
-              {isLoadingInfo ? <LoadingSection /> : null}
-
-              {!isLoadingInfo && assetInfo?.exif ? (
-                <>
-                  <CameraSection exif={assetInfo.exif} />
-                  <CaptureSettingsSection exif={assetInfo.exif} />
-                </>
-              ) : null}
-
-              <LocationSection
-                exif={assetInfo?.exif}
-                location={selectedPhoto.location}
-              />
             </View>
           </ScrollView>
         </Animated.View>
@@ -383,13 +397,33 @@ const styles = StyleSheet.create({
   metadataSection: {
     backgroundColor: COLORS.background,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "600",
+  metadataRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  metadataLabel: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  metadataValue: {
+    fontSize: 14,
     color: COLORS.textPrimary,
-    marginBottom: 12,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.separator,
+  },
+  locationContainer: {
+    marginTop: 16,
+  },
+  locationLabel: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginBottom: 8,
+  },
+  loadingLocation: {
+    aspectRatio: 16 / 9,
+    borderRadius: 12,
+    backgroundColor: "#F2F2F2",
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
