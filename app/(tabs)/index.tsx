@@ -13,19 +13,22 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { FeedItem } from "../src/components/feed/FeedItem";
-import { PortraitSection } from "../src/components/feed/PortraitSection";
-import { AppHeader, HEADER_HEIGHT } from "../src/components/header/AppHeader";
-import { PermissionGuide } from "../src/components/permission/PermissionGuide";
+import { FeedItem } from "../../src/components/feed/FeedItem";
+import { PortraitSection } from "../../src/components/feed/PortraitSection";
+import {
+  AppHeader,
+  HEADER_HEIGHT,
+} from "../../src/components/header/AppHeader";
+import { PermissionGuide } from "../../src/components/permission/PermissionGuide";
 import {
   HiddenRefreshControl,
   RefreshProgressBar,
   useRefreshProgress,
-} from "../src/components/refresh/CustomRefreshControl";
-import { useInfinitePhotos } from "../src/hooks/useInfinitePhotos";
-import { usePermissions } from "../src/hooks/usePermissions";
-import { type FeedPhoto, isPortraitPhoto } from "../src/types/photo";
-import { COLORS } from "../src/utils/constants";
+} from "../../src/components/refresh/CustomRefreshControl";
+import { useInfinitePhotos } from "../../src/hooks/useInfinitePhotos";
+import { usePermissions } from "../../src/hooks/usePermissions";
+import { type FeedPhoto, isPortraitPhoto } from "../../src/types/photo";
+import { COLORS } from "../../src/utils/constants";
 
 // Feed item types for mixed content
 type FeedItemType =

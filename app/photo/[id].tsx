@@ -1,9 +1,8 @@
 import { Image } from "expo-image";
 import * as MediaLibrary from "expo-media-library";
 import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Animated,
   Dimensions,
   PanResponder,
@@ -13,165 +12,26 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ActionButtons } from "../../src/components/detail/ActionButtons";
+import {
+  CameraSection,
+  CaptureSettingsSection,
+  formatDate,
+  LoadingSection,
+  LocationSection,
+  MetadataRow,
+} from "../../src/components/detail/PhotoMetadata";
+import { PlaylistBottomSheet } from "../../src/components/detail/PlaylistBottomSheet";
 import { usePhotoContext } from "../../src/context/PhotoContext";
 import {
   mapAssetInfoToPhotoInfo,
   type PhotoAssetInfo,
-  type PhotoExif,
 } from "../../src/types/photo";
 import { COLORS } from "../../src/utils/constants";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const DISMISS_THRESHOLD = 150;
-
-// Helper functions
-function formatDate(timestamp: number | null): string {
-  if (!timestamp) {
-    return "Unknown";
-  }
-  const date = new Date(timestamp);
-  return date.toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    weekday: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatExposureTime(time: number): string {
-  if (time >= 1) {
-    return `${time}s`;
-  }
-  return `1/${Math.round(1 / time)}s`;
-}
-
-function formatFlash(flash: number): string {
-  if (flash === 0) {
-    return "No Flash";
-  }
-  // biome-ignore lint/suspicious/noBitwiseOperators: EXIF flash field uses bitwise flags
-  if (flash & 1) {
-    return "Flash Fired";
-  }
-  return "No Flash";
-}
-
-// Sub-components
-function MetadataRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.metadataRow}>
-      <Text style={styles.metadataLabel}>{label}</Text>
-      <Text style={styles.metadataValue}>{value}</Text>
-    </View>
-  );
-}
-
-function CameraSection({ exif }: { exif: PhotoExif }) {
-  return (
-    <>
-      <Text style={[styles.sectionTitle, styles.newSection]}>Camera</Text>
-      {exif.make ? <MetadataRow label="Make" value={exif.make} /> : null}
-      {exif.model ? <MetadataRow label="Model" value={exif.model} /> : null}
-      {exif.lensModel ? (
-        <MetadataRow label="Lens" value={exif.lensModel} />
-      ) : null}
-      {exif.software ? (
-        <MetadataRow label="Software" value={exif.software} />
-      ) : null}
-    </>
-  );
-}
-
-function CaptureSettingsSection({ exif }: { exif: PhotoExif }) {
-  const hasSettings =
-    exif.fNumber || exif.exposureTime || exif.iso || exif.focalLength;
-
-  if (!hasSettings) {
-    return null;
-  }
-
-  return (
-    <>
-      <Text style={[styles.sectionTitle, styles.newSection]}>
-        Capture Settings
-      </Text>
-      {exif.fNumber ? (
-        <MetadataRow label="Aperture" value={`f/${exif.fNumber}`} />
-      ) : null}
-      {exif.exposureTime ? (
-        <MetadataRow
-          label="Shutter Speed"
-          value={formatExposureTime(exif.exposureTime)}
-        />
-      ) : null}
-      {exif.iso ? <MetadataRow label="ISO" value={String(exif.iso)} /> : null}
-      {exif.focalLength ? (
-        <MetadataRow
-          label="Focal Length"
-          value={`${exif.focalLength}mm${
-            exif.focalLengthIn35mm ? ` (${exif.focalLengthIn35mm}mm equiv)` : ""
-          }`}
-        />
-      ) : null}
-      {exif.flash !== undefined ? (
-        <MetadataRow label="Flash" value={formatFlash(exif.flash)} />
-      ) : null}
-      {exif.whiteBalance !== undefined ? (
-        <MetadataRow
-          label="White Balance"
-          value={exif.whiteBalance === 0 ? "Auto" : "Manual"}
-        />
-      ) : null}
-    </>
-  );
-}
-
-type LocationSectionProps = {
-  location: {
-    latitude: number;
-    longitude: number;
-    city?: string;
-    country?: string;
-  } | null;
-  exif?: PhotoExif;
-};
-
-function LocationSection({ location, exif }: LocationSectionProps) {
-  const hasLocation = location || exif?.gpsLatitude;
-
-  if (!hasLocation) {
-    return null;
-  }
-
-  return (
-    <>
-      <Text style={[styles.sectionTitle, styles.newSection]}>Location</Text>
-      <MetadataRow
-        label="Latitude"
-        value={(location?.latitude ?? exif?.gpsLatitude ?? 0).toFixed(6)}
-      />
-      <MetadataRow
-        label="Longitude"
-        value={(location?.longitude ?? exif?.gpsLongitude ?? 0).toFixed(6)}
-      />
-      {exif?.gpsAltitude ? (
-        <MetadataRow
-          label="Altitude"
-          value={`${exif.gpsAltitude.toFixed(1)}m`}
-        />
-      ) : null}
-      {location?.city ? (
-        <MetadataRow label="City" value={location.city} />
-      ) : null}
-      {location?.country ? (
-        <MetadataRow label="Country" value={location.country} />
-      ) : null}
-    </>
-  );
-}
 
 // Main component
 export default function PhotoDetailScreen() {
@@ -185,6 +45,15 @@ export default function PhotoDetailScreen() {
 
   const [assetInfo, setAssetInfo] = useState<PhotoAssetInfo | null>(null);
   const [isLoadingInfo, setIsLoadingInfo] = useState(true);
+  const [showPlaylistSheet, setShowPlaylistSheet] = useState(false);
+
+  const handleSavePress = useCallback(() => {
+    setShowPlaylistSheet(true);
+  }, []);
+
+  const handleClosePlaylistSheet = useCallback(() => {
+    setShowPlaylistSheet(false);
+  }, []);
 
   useEffect(() => {
     if (!selectedPhoto) {
@@ -413,6 +282,11 @@ export default function PhotoDetailScreen() {
             <Text style={styles.title}>{selectedPhoto.title}</Text>
             <Text style={styles.timeAgo}>{selectedPhoto.timeAgo}</Text>
 
+            <ActionButtons
+              onSavePress={handleSavePress}
+              photoId={selectedPhoto.id}
+            />
+
             <View style={styles.metadataSection}>
               <Text style={styles.sectionTitle}>Details</Text>
 
@@ -440,15 +314,7 @@ export default function PhotoDetailScreen() {
                 />
               ) : null}
 
-              {isLoadingInfo ? (
-                <View style={styles.loadingSection}>
-                  <ActivityIndicator
-                    color={COLORS.textSecondary}
-                    size="small"
-                  />
-                  <Text style={styles.loadingText}>Loading EXIF data...</Text>
-                </View>
-              ) : null}
+              {isLoadingInfo ? <LoadingSection /> : null}
 
               {!isLoadingInfo && assetInfo?.exif ? (
                 <>
@@ -465,6 +331,12 @@ export default function PhotoDetailScreen() {
           </ScrollView>
         </Animated.View>
       </Animated.View>
+
+      <PlaylistBottomSheet
+        onClose={handleClosePlaylistSheet}
+        photoId={selectedPhoto.id}
+        visible={showPlaylistSheet}
+      />
     </View>
   );
 }
@@ -506,7 +378,7 @@ const styles = StyleSheet.create({
   timeAgo: {
     fontSize: 14,
     color: COLORS.textSecondary,
-    marginBottom: 24,
+    marginBottom: 8,
   },
   metadataSection: {
     backgroundColor: COLORS.background,
@@ -519,36 +391,5 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.separator,
-  },
-  newSection: {
-    marginTop: 24,
-  },
-  loadingSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 16,
-    gap: 8,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-  },
-  metadataRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.separator,
-  },
-  metadataLabel: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    flex: 1,
-  },
-  metadataValue: {
-    fontSize: 14,
-    color: COLORS.textPrimary,
-    flex: 2,
-    textAlign: "right",
   },
 });

@@ -11,7 +11,7 @@ export default function RootLayout() {
         <PhotoProvider>
           <StatusBar style="dark" />
           <Stack screenOptions={{ headerShown: false, animation: "none" }}>
-            <Stack.Screen name="index" />
+            <Stack.Screen name="(tabs)" />
             <Stack.Screen
               name="photo/[id]"
               options={{
@@ -19,6 +19,7 @@ export default function RootLayout() {
                 contentStyle: { backgroundColor: "transparent" },
               }}
             />
+            <Stack.Screen name="playlist/[id]" />
           </Stack>
         </PhotoProvider>
       </SafeAreaProvider>
